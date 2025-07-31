@@ -4,4 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bluez = "0.4.0"
+bluer = { version = "0.17.4", features = ["full"] }
+futures = "0.3.31"
+tokio = { version = "1.47.0", features = ["macros", "rt-multi-thread", "time"]}
