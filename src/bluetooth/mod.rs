@@ -1,4 +1,3 @@
-use std::io::ErrorKind;
 use std::pin::Pin;
 use std::time::Duration;
 
