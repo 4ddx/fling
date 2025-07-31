@@ -11,7 +11,19 @@ pub struct FlingInstance {
 }
 
 pub struct DeviceDescriptor {
-    pub name: String
+    pub name: String,
+    pub address: String
+}
+
+pub impl DeviceDescriptor {
+    async fn new(device: &bluer::Device) -> Result<DeviceDescriptor> {
+        let descriptor = DeviceDescriptor { 
+            name: device.name().await?.unwrap_or_default(),
+            address: device.address().to_string()
+        };
+
+        Ok(descriptor)
+    }
 }
 
 
