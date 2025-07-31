@@ -1,37 +1,23 @@
-mod utils;
-mod fsm;
 mod bluetooth;
-use utils::cli::{Cli, Commands};
+mod fsm;
+mod utils;
 use clap::Parser;
-use fsm::{sender_fsm, receiver_fsm};
-
-/** fling send filepath.txt  || fling receive */
+use fsm::{receiver_fsm, sender_fsm};
+use utils::cli::{Cli, Commands};
+mod tunnel;
 
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
+
     match cli.command {
-        Commands::Send {filepath } => {
-            /***should invoke sender_fsm here*/
-            println!("Sender Mode Enabled! FILE TO SEND: {} \nScanning for devices...", filepath);
-            sender_fsm::start_sender_fsm(&filepath);
+        Commands::Send { filepath } => {
+            println!("Sender Mode Enabled!\nFile to send: {}", filepath);
+            sender_fsm::start_sender_fsm(&filepath).await;
         }
         Commands::Receive => {
-            /***should invoke receiver_fsm here*/
-            println!("Receive Mode Enabled! \nListening for offers");
-            receiver_fsm::start_receiver_fsm();
+            println!("Receiver Mode Enabled!\nListening for offers...");
+             receiver_fsm::start_receiver_fsm().await;
         }
     }
-    let instance = bluetooth::initialize().await; 
-    let descriptors = match bluetooth::scan_devices(&instance).await {
-        Ok(descriptors) => descriptors,
-        Err(_) => Vec::new()
-    };
-
-    for descriptor in descriptors {
-        println!("Descriptor: {}", descriptor.name);
-    }
-
-
-
 }
