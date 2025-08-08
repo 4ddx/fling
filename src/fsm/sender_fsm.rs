@@ -1,15 +1,16 @@
+use dialoguer::{Select, theme::ColorfulTheme};
 use std::time::Duration;
-use dialoguer::{theme::ColorfulTheme, Select};
 
-use crate::bluetooth::{self, discovery::DeviceInfo};
+use crate::bluetooth;
+use crate::crypto;
 use crate::tunnel;
-
 #[derive(Debug)]
 pub enum SenderState {
     Scanning,
-    Connecting(DeviceInfo),
-    StartingHotspot(DeviceInfo),   // Replaces SettingUpNetwork
-    WaitingForJoin(DeviceInfo),    // NEW: Wait for Wi-Fi client
+    Connecting(bluetooth::discovery::DeviceInfo),
+    ServingGatt(bluetooth::discovery::DeviceInfo),
+    StartingHotspot(bluetooth::discovery::DeviceInfo, String),
+    WaitingForJoin(bluetooth::discovery::DeviceInfo),
     Sending,
     SendSuccess,
     SendFailed,
@@ -63,10 +64,10 @@ pub async fn start_sender_fsm(filepath: &str) -> SenderState {
 
             Connecting(device_info) => {
                 println!("[Connecting] Attempting to connect to {}", device_info.name);
-                match adapter.connect_to_device(&device_info).await {
+                match adapter.connect_to_device(&device_info.address).await {
                     Ok(_) => {
                         println!("[Connecting] Connected to {}", device_info.name);
-                        StartingHotspot(device_info)
+                        ServingGatt(device_info)
                     }
                     Err(e) => {
                         eprintln!("[Connecting] Failed: {}", e);
@@ -74,17 +75,45 @@ pub async fn start_sender_fsm(filepath: &str) -> SenderState {
                     }
                 }
             }
+            ServingGatt(device_info) => {
+                println!("[GATT] Starting GATT server for key exchange...");
 
-            StartingHotspot(device_info) => {
+                let device_address = match device_info.address.parse::<bluer::Address>() {
+                    Ok(addr) => addr,
+                    Err(e) => {
+                        eprintln!("[GATT] Invalid MAC address format: {}", e);
+                        return ConnectionFailed;
+                    }
+                };
+                let crypto_key = crypto::crypto::generate_encryption_key();
+                let net_pass =
+                    crypto::crypto::generate_network_password(&device_info.name, &crypto_key);
+
+                match adapter.serve_gatt(crypto_key, device_address).await {
+                    Ok(_) => {
+                        println!(
+                            "[GATT] GATT server started, waiting for {} to read key...",
+                            device_info.name
+                        );
+                        tokio::time::sleep(Duration::from_secs(5)).await;
+                        StartingHotspot(device_info, net_pass)
+                    }
+                    Err(e) => {
+                        eprintln!("[GATT] Failed to start GATT server: {}", e);
+                        ConnectionFailed
+                    }
+                }
+            }
+
+            StartingHotspot(device_info, net_pass) => {
                 // Use receiver's hostname + BT MAC to create deterministic SSID
                 let hostname = device_info.name.clone();
                 let mac_fragment = device_info.address.replace(":", "").to_lowercase();
-                let suffix = &mac_fragment[mac_fragment.len()-4..];
+                let suffix = &mac_fragment[mac_fragment.len() - 4..];
                 let ssid = format!("fling-{}-{}", hostname, suffix);
-                let password = format!("fling-{}!", suffix);
 
-                println!("[Hotspot] Creating AP SSID: {} | PW: {}", ssid, password);
-                match tunnel::connection::create_wifi_direct_network(&ssid, &password).await {
+                println!("[Hotspot] Creating AP SSID: {} | PW: {}", ssid, net_pass);
+                match tunnel::connection::create_wifi_direct_network(&ssid, &net_pass).await {
                     Ok(_) => {
                         println!("[Hotspot] AP live. Waiting for receiver to join...");
                         WaitingForJoin(device_info)
@@ -119,25 +148,29 @@ pub async fn start_sender_fsm(filepath: &str) -> SenderState {
                         SendFailed
                     }
                 }
-            }            
-            
+            }
+
             SendSuccess => {
                 println!("[✅] Transfer complete!");
+                tunnel::connection::cleanup_wifi().await;
                 break SendSuccess;
             }
 
             SendFailed => {
                 println!("[❌] Transfer failed.");
+                tunnel::connection::cleanup_wifi().await;
                 break SendFailed;
             }
 
             NoDevicesFound => {
                 println!("[NoDevicesFound] Exiting.");
+                tunnel::connection::cleanup_wifi().await;
                 break NoDevicesFound;
             }
 
             ConnectionFailed => {
                 println!("[ConnectionFailed] Exiting.");
+                tunnel::connection::cleanup_wifi().await;
                 break ConnectionFailed;
             }
         };

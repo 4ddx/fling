@@ -7,11 +7,22 @@ edition = "2024"
 bluer = { version = "0.17.4", features = ["full"] }
 futures = "0.3.31"
 tokio = { version = "1.47.0", features = ["macros", "rt-multi-thread", "time", "full", "process"]}
+tokio-util = { version = "0.7", features = ["compat"] }
 clap = {version = "4.5.41", features = ["derive"]}
 dialoguer = "0.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 bluetooth-serial-port = "0.3"
 whoami = "1.4"
-uuid = { version = "1.0", features = ["v4"] } 
+uuid = { version = "1.4", features = ["v4"] } 
 chrono = "0.4"
+indicatif = "0.17"
+nix = {version = "0.30.1", features = ["socket"]}
+socket2 = "0.5"
+zstd = "0.12"
+bluest = "0.6.9"
+rand = "0.8"
+sha2 = "0.10"
+aes-gcm = "0.10"
+anyhow="1.0.98"
+futures-lite = "2.6.1"
