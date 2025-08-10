@@ -36,25 +36,27 @@ pub fn wait_for_port(host: &str, port: u16) -> TcpStream {
 }
 pub fn join_wifi_direct_network(ssid: &str, password: &str) -> bool {
     let interface = "en0";
-    
-    let timeout = Duration::from_secs(20);
-    let start_time = Instant::now();
 
-    println!("[JoiningNetwork] Trying to connect to Wi-Fi: {}", ssid);
+    let timeout = Duration::from_secs(10);
+    let start = Instant::now();
+
     while start.elapsed() < timeout {
         let output = Command::new("networksetup")
             .args(&["-setairportnetwork", interface, ssid, password])
             .output();
-        
-    match output {
-        Ok(output) if output.status.success() => {}
-        Ok(output) => {
-            eprintln!("Command failed: {}", String::from_utf8_lossy(&output.stderr));
+
+        match output {
+            Ok(output) if output.status.success() => {
+                println!("[Attempt] Command executed successfully.");
+            }
+            Ok(output) => {
+                eprintln!("[Attempt] Command failed: {}", String::from_utf8_lossy(&output.stderr));
+            }
+            Err(e) => {
+                eprintln!("[Attempt] Failed to run command: {}", e);
+            }
         }
-        Err(e) => {
-            eprintln!("Failed to run command: {}", e);
-        }
-        thread_sleep(Duration::from_secs(2));
+        thread_sleep(Duration::from_millis(500));
     }
-        true
+    true
 }
