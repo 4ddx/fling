@@ -15,6 +15,7 @@ async fn main() {
     tokio::spawn(async move {
         if signal::ctrl_c().await.is_ok() {
             println!("\n[Signal] Caught Ctrl+C! Cleaning up...");
+
             #[cfg(target_os="linux")]
             linux::connection::cleanup_wifi().await;
             std::process::exit(1)
@@ -30,6 +31,7 @@ async fn main() {
                 println!("Sending from a MAC is not currently supported.\nSee README.md for more details.");
                 std::process::exit(1);
         }
+
             #[cfg(target_os="linux")]
             fsm::sender_fsm::start_sender_fsm(&filepath).await;
         }
