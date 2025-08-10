@@ -38,7 +38,7 @@ pub async fn start_receiver_fsm() -> ReceiverState {
                 #[allow(deprecated)]
                 let hostname = get_hostname();
                 let mac = bluetooth::discovery::get_bluetooth_mac().unwrap();
-                let mac_fragment = &mac.replace(":", ":").to_lowercase();
+                let mac_fragment = &mac.replace(":", "").to_lowercase();
                 let suffix = &mac_fragment[mac_fragment.len()-4..];
                 let password = crypto::crypto::generate_network_password(&hostname, &key);              
                 let ssid = format!("fling-{}-{}-{}", hostname, suffix, &password[password.len()-2..]);
