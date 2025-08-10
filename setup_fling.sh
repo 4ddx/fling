@@ -3,7 +3,7 @@
 set -e
 
 echo "🦀 Checking for Rust..."
-if ! command -v cargo >/dev/null 2&1; then
+if ! command -v cargo >/dev/null 2>&1; then
 	echo "Rust is not installed. Installing...."
 	curl https://sh.rustup.rs -sSf | sh -s -- -y
 	export PATH="$HOME/.cargo/bin:$PATH"
@@ -26,10 +26,11 @@ if [ ! -f "$BIN_PATH" ]; then
 	exit 1
 fi
 
-echo "Installing to /usr/local/bin/fling..."
+echo "Installing to /usr/local/bin/fling... This may require your password to create directory."
 
-sudo cp "$BIN_PATH" /usr/local/bin/fling
-sudo chmod +x /usr/local/bin/fling
+sudo mkdir -p /usr/local/bin
+
+sudo cp target/release/fling /usr/local/bin/fling
 
 echo "Installation complete! You can now run:"
 echo "		fling send <file/path/or/directory>"
