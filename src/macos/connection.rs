@@ -37,7 +37,7 @@ pub fn wait_for_port(host: &str, port: u16) -> TcpStream {
 pub fn join_wifi_direct_network(ssid: &str, password: &str) -> bool {
     let interface = "en0";
 
-    let timeout = Duration::from_secs(10);
+    let timeout = Duration::from_secs(20);
     let start = Instant::now();
 
     while start.elapsed() < timeout {

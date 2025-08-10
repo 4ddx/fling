@@ -82,7 +82,6 @@ pub async fn start_sender_fsm(filepath: &str) -> SenderState {
 
                 match adapter.serve_gatt(crypto_key, device_address).await {
                     Ok(_) => {
-                        tokio::time::sleep(Duration::from_secs(2)).await;
                         StartingHotspot(device_info, net_pass)
                     }
                     Err(e) => {
@@ -93,14 +92,14 @@ pub async fn start_sender_fsm(filepath: &str) -> SenderState {
             }
 
             StartingHotspot(device_info, net_pass) => {
-                // Use receiver's hostname + BT MAC to create deterministic SSID
+                //Use receiver's hostname + BT MAC to create deterministic SSID
                 let hostname = device_info.name.clone();
                 let mac_fragment = device_info.address.replace(":", "").to_lowercase();
                 let suffix = &mac_fragment[mac_fragment.len() - 4..];
                 let ssid = format!("fling-{}-{}-{}", hostname, suffix, &net_pass[net_pass.len()-2..]);
                 match tunnel::connection::create_wifi_direct_network(&ssid, &net_pass).await {
                     Ok(_) => {
-                        // println!("[Hotspot] AP live. Waiting for receiver to join...");
+                        println!("[Hotspot] AP live. Waiting for receiver to join...");
                         WaitingForJoin(device_info)
                     }
                     Err(e) => {
@@ -111,10 +110,10 @@ pub async fn start_sender_fsm(filepath: &str) -> SenderState {
             }
 
             WaitingForJoin(_device_info) => {
-                //println!("[WaitingForJoin] Polling for client...");
+                println!("[WaitingForJoin] Polling for client...");
                 match tunnel::connection::wait_for_receiver().await {
                     Ok(_) => {
-                        //println!("[WaitingForJoin] Receiver joined the network!");
+                        println!("[WaitingForJoin] Receiver joined the network!");
                         Sending
                     }
                     Err(e) => {

@@ -38,10 +38,10 @@ pub async fn start_receiver_fsm() -> ReceiverState {
                 #[allow(deprecated)]
                 let hostname = get_hostname();
                 let mac = bluetooth::discovery::get_bluetooth_mac().unwrap();
-                let suffix = &mac.replace(":", "").to_lowercase()[..4];
-                let ssid = format!("fling-{}-{}", hostname, suffix);
+                let mac_fragment = &mac.replace(":", ":").to_lowercase();
+                let suffix = &mac_fragment[mac_fragment.len()-4..];
                 let password = crypto::crypto::generate_network_password(&hostname, &key);              
-
+                let ssid = format!("fling-{}-{}-{}", hostname, suffix, &password[password.len()-2..]);
                 JoiningNetwork(ssid, password)
             }
 
@@ -87,20 +87,20 @@ pub async fn start_receiver_fsm() -> ReceiverState {
 fn get_hostname() -> String {
     use std::process::Command;
 
-    let output = Command::new("scutil")
+    let hostname_op = Command::new("scutil")
         .args(&["--get", "ComputerName"])
         .output()
         .expect("Failed to fetch hostname");
 
-    if output.status.success() {
-        String::from_utf8_lossy(&output.stdout).trim().to_string()
-    } else {
-        eprintln!(
-            "Failed to get computer name: {}",
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
-        "unknown".to_string()
-    }
+    let name = if hostname_op.status.success() {
+        let name = String::from_utf8_lossy(&hostname_op.stdout).trim().to_string();
+        name
+    }else {
+        let err_m = String::from_utf8_lossy(&hostname_op.stderr).trim().to_string();
+        eprintln!("Failed to get computer name: {}", err_m);
+        err_m
+    };
+    name
 }
 
 #[cfg(target_os = "linux")]
