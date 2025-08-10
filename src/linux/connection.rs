@@ -12,23 +12,6 @@ pub async fn create_wifi_direct_network(ssid: &str, password: &str) -> Result<St
 
     let _ = Command::new("nmcli").args(&["dev", "disconnect", "wlan0"]).output();
 
-    // 1. Create new hotspot
-    // let output = Command::new("nmcli")
-    //     .args(&[
-    //         "dev", "wifi", "hotspot",
-    //         "ifname", iface,
-    //         "ssid", ssid,
-    //         "password", password,
-    //     ])
-    //     .output()
-    //     .map_err(|e| format!("Failed to launch hotspot: {}", e))?;
-
-    // if !output.status.success() {
-    //     return Err(format!(
-    //         "Hotspot creation failed: {}",
-    //         String::from_utf8_lossy(&output.stderr)
-    //     ));
-    // }
     let cmd = Command::new("nmcli")
         .args(&[
             "device", "wifi", "hotspot",
@@ -98,22 +81,17 @@ pub async fn cleanup_wifi() {
     println!("[Cleanup] Wi-Fi state cleaned up and reset.");
 }
 ///Joins a Full AP network controlled by sender
-pub async fn join_wifi_direct_network(ssid: &str, password: &str) -> Result<(), String> {
+pub fn join_wifi_direct_network(ssid: &str, password: &str) -> bool {
     use std::process::Command;
 
-    // Replace with nmcli or wpa_supplicant depending on the platform
     let output = Command::new("nmcli")
         .args(&["dev", "wifi", "connect", ssid, "password", password])
-        .output()
-        .map_err(|e| format!("Failed to launch nmcli: {}", e))?;
+        .output();
 
-    if output.status.success() {
-        Ok(())
-    } else {
-        Err(format!(
-            "Failed to connect to WiFi: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ))
+    match output {
+        Ok(o) if o.status.success() => true,
+        _ => false,
     }
 }
+
 

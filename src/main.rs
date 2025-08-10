@@ -8,19 +8,15 @@ mod linux;
 mod macos;
 mod crypto;
 use tokio::signal;
-use std::sync::Arc;
-use tokio::sync::Notify;
 
 #[tokio::main]
 async fn main() {
-    let shutdown_notify = Arc::new(Notify::new());
-    let shutdown_handle = shutdown_notify.clone();
 
     tokio::spawn(async move {
         if signal::ctrl_c().await.is_ok() {
             println!("\n[Signal] Caught Ctrl+C! Cleaning up...");
             linux::connection::cleanup_wifi().await;
-            shutdown_handle.notify_one();
+            std::process::exit(1)
         }
     });
 

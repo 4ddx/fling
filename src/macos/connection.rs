@@ -35,14 +35,12 @@ pub fn wait_for_port(host: &str, port: u16) -> TcpStream {
     }
 }
 pub fn join_wifi_direct_network(ssid: &str, password: &str) -> bool {
-    let interface = "en0"; // This may need to be dynamic for different systems
+    let interface = "en0";
     let timeout = Duration::from_secs(20);
     let start_time = Instant::now();
 
     println!("[JoiningNetwork] Trying to connect to Wi-Fi: {}", ssid);
 
-    while start_time.elapsed() < timeout {
-        // Attempt to join the network
         let output = Command::new("networksetup")
             .args(&["-setairportnetwork", interface, ssid, password])
             .output();
@@ -55,10 +53,8 @@ pub fn join_wifi_direct_network(ssid: &str, password: &str) -> bool {
             eprintln!("[Error] Failed to execute networksetup command.");
         }
 
-        // Wait a bit to let the network connection stabilize
         thread_sleep(Duration::from_secs(2));
-
-        // Verify if macOS is actually connected to the specified SSID
+        while start_time.elapsed() < timeout {
         let verify_output = Command::new("networksetup")
             .args(&["-getairportnetwork", interface])
             .output();
@@ -76,8 +72,6 @@ pub fn join_wifi_direct_network(ssid: &str, password: &str) -> bool {
                 eprintln!("[Error] Failed to get current Wi-Fi network: {}", String::from_utf8_lossy(&verify_output.stderr));
             }
         }
-
-        // Wait a bit before retrying
         thread_sleep(Duration::from_secs(2));
     }
 

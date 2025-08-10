@@ -1,3 +1,4 @@
+#![cfg(target_os="linux")]
 use dialoguer::{Select, theme::ColorfulTheme};
 use std::time::Duration;
 
@@ -35,7 +36,7 @@ pub async fn start_sender_fsm(filepath: &str) -> SenderState {
         state = match state {
             Scanning => {
                 println!("[Scanning] Searching for nearby receivers...");
-                let devices = match adapter.scan_devices(Duration::from_secs(10)).await {
+                let devices = match adapter.scan_devices(Duration::from_secs(5)).await {
                     Ok(devices) => devices,
                     Err(e) => {
                         eprintln!("[Scanning] Scan failed: {}", e);
@@ -63,17 +64,7 @@ pub async fn start_sender_fsm(filepath: &str) -> SenderState {
             }
 
             Connecting(device_info) => {
-                println!("[Connecting] Attempting to connect to {}", device_info.name);
-                match adapter.connect_to_device(&device_info.address).await {
-                    Ok(_) => {
-                        println!("[Connecting] Connected to {}", device_info.name);
-                        ServingGatt(device_info)
-                    }
-                    Err(e) => {
-                        eprintln!("[Connecting] Failed: {}", e);
-                        ConnectionFailed
-                    }
-                }
+                ServingGatt(device_info)
             }
             ServingGatt(device_info) => {
                 println!("[GATT] Starting GATT server for key exchange...");
@@ -91,11 +82,7 @@ pub async fn start_sender_fsm(filepath: &str) -> SenderState {
 
                 match adapter.serve_gatt(crypto_key, device_address).await {
                     Ok(_) => {
-                        println!(
-                            "[GATT] GATT server started, waiting for {} to read key...",
-                            device_info.name
-                        );
-                        tokio::time::sleep(Duration::from_secs(5)).await;
+                        tokio::time::sleep(Duration::from_secs(2)).await;
                         StartingHotspot(device_info, net_pass)
                     }
                     Err(e) => {
@@ -110,12 +97,10 @@ pub async fn start_sender_fsm(filepath: &str) -> SenderState {
                 let hostname = device_info.name.clone();
                 let mac_fragment = device_info.address.replace(":", "").to_lowercase();
                 let suffix = &mac_fragment[mac_fragment.len() - 4..];
-                let ssid = format!("fling-{}-{}", hostname, suffix);
-
-                println!("[Hotspot] Creating AP SSID: {} | PW: {}", ssid, net_pass);
+                let ssid = format!("fling-{}-{}-{}", hostname, suffix, &net_pass[net_pass.len()-2..]);
                 match tunnel::connection::create_wifi_direct_network(&ssid, &net_pass).await {
                     Ok(_) => {
-                        println!("[Hotspot] AP live. Waiting for receiver to join...");
+                        // println!("[Hotspot] AP live. Waiting for receiver to join...");
                         WaitingForJoin(device_info)
                     }
                     Err(e) => {
@@ -126,10 +111,10 @@ pub async fn start_sender_fsm(filepath: &str) -> SenderState {
             }
 
             WaitingForJoin(_device_info) => {
-                println!("[WaitingForJoin] Polling for client...");
+                //println!("[WaitingForJoin] Polling for client...");
                 match tunnel::connection::wait_for_receiver().await {
                     Ok(_) => {
-                        println!("[WaitingForJoin] Receiver joined the network!");
+                        //println!("[WaitingForJoin] Receiver joined the network!");
                         Sending
                     }
                     Err(e) => {
