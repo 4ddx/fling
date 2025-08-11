@@ -30,7 +30,7 @@ echo "Installing to /usr/local/bin/fling... This may require your password to cr
 
 sudo mkdir -p /usr/local/bin
 
-sudo cp target/release/fling /usr/local/bin/fling
+sudo cp ./target/release/fling /usr/bin
 
 echo "Installation complete! You can now run:"
 echo "		fling send <file/path/or/directory>"
