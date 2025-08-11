@@ -6,6 +6,7 @@ use utils::cli::{Cli, Commands};
 mod tunnel;
 mod linux;
 mod macos;
+mod windows;
 mod crypto;
 use tokio::signal;
 
