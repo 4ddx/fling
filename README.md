@@ -57,7 +57,7 @@ I am also planning of writing a Menu Bar GUI Icon for MacOS which just stays on 
 - Ishan Kumar (https://github.com/4ddx)
 - Akhil Jose (https://github.com/AkZuza)
 
-Special thanks to the OSS community — we stand on the shoulders of giants.
+Special thanks to the OSS community.
 
 ---
 
