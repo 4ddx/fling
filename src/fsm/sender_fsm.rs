@@ -1,4 +1,5 @@
-#![cfg(target_os="linux")]
+#![cfg(any(target_os = "linux", target_os = "windows"))]
+
 use dialoguer::{Select, theme::ColorfulTheme};
 use std::time::Duration;
 
